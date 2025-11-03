@@ -193,3 +193,208 @@ mundo"
 
 - Leonardo Raphael Pachari Gomez
 - Angela Milagros Quispe Huanca
+
+
+.L:
+%option noyywrap
+%option yylineno
+%{
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include <ctype.h>
+
+  typedef enum {
+    T_IF, T_ELSE, T_END, T_WHILE, T_LOOP, T_FUN, T_RETURN, T_NEW, T_STRING, T_INT, T_CHAR, T_BOOL, 
+    T_TRUE, T_FALSE, T_AND, T_OR, T_NOT, T_ID, T_INT_LITERAL, T_HEX_LITERAL, T_STRING_LITERAL,
+    T_PLUS, T_MINUS, T_STAR, T_SLASH, T_GT, T_LT, T_GE, T_LE, T_EQ, T_NEQ, T_LPAREN, T_RPAREN, 
+    T_LBRACK, T_RBRACK, T_COMMA, T_COLON, T_ERROR, T_COMMENT, T_NEWLINE
+  } TokenType;
+
+  typedef struct {
+    TokenType type;
+    char* lexeme;  // Texto original
+    int line;      // Línea en el archivo
+    long numeric_value;  // Si es un número (entero o hexadecimal)
+    char* sval;    // Si es un string
+  } Token;
+
+  // Utilidad para duplicar cadenas
+  static char* xstrdup(const char* str) {
+    size_t len = strlen(str) + 1;
+    char* p = (char*)malloc(len);
+    if(p) memcpy(p, str, len);
+    return p;
+  }
+
+  static void emit(TokenType t, const char* lex) {
+    Token tok = {0};
+    tok.type = t;
+    tok.lexeme = xstrdup(lex);
+    tok.line = yylineno;
+    
+    // Impresión del token
+    printf("[linea %d] %-20s lexema=\"%s\"\n", tok.line, tokname(tok.type), tok.lexeme);
+    
+    free(tok.lexeme);
+  }
+
+  static const char* tokname(TokenType t) {
+    switch (t) {
+      case T_IF: return "IF";
+      case T_ELSE: return "ELSE";
+      case T_END: return "END";
+      case T_WHILE: return "WHILE";
+      case T_LOOP: return "LOOP";
+      case T_FUN: return "FUN";
+      case T_RETURN: return "RETURN";
+      case T_NEW: return "NEW";
+      case T_STRING: return "STRING";
+      case T_INT: return "INT";
+      case T_CHAR: return "CHAR";
+      case T_BOOL: return "BOOL";
+      case T_TRUE: return "TRUE";
+      case T_FALSE: return "FALSE";
+      case T_AND: return "AND";
+      case T_OR: return "OR";
+      case T_NOT: return "NOT";
+      case T_ID: return "ID";
+      case T_INT_LITERAL: return "INT_LITERAL";
+      case T_HEX_LITERAL: return "HEX_LITERAL";
+      case T_STRING_LITERAL: return "STRING_LITERAL";
+      case T_PLUS: return "PLUS";
+      case T_MINUS: return "MINUS";
+      case T_STAR: return "STAR";
+      case T_SLASH: return "SLASH";
+      case T_GT: return "GT";
+      case T_LT: return "LT";
+      case T_GE: return "GE";
+      case T_LE: return "LE";
+      case T_EQ: return "EQ";
+      case T_NEQ: return "NEQ";
+      case T_LPAREN: return "LPAREN";
+      case T_RPAREN: return "RPAREN";
+      case T_LBRACK: return "LBRACK";
+      case T_RBRACK: return "RBRACK";
+      case T_COMMA: return "COMMA";
+      case T_COLON: return "COLON";
+      case T_ERROR: return "ERROR";
+      case T_COMMENT: return "COMMENT";
+      case T_NEWLINE: return "NEWLINE";
+      default: return "?";
+    }
+  }
+%}
+
+%%
+
+[ \t\r\f\v]+                  ; // Ignorar espacios en blanco
+\n                            { emit(T_NEWLINE, yytext); }
+
+"if"                         { emit(T_IF, yytext); }
+"else"                       { emit(T_ELSE, yytext); }
+"end"                        { emit(T_END, yytext); }
+"while"                       { emit(T_WHILE, yytext); }
+"loop"                        { emit(T_LOOP, yytext); }
+"fun"                         { emit(T_FUN, yytext); }
+"return"                      { emit(T_RETURN, yytext); }
+"new"                         { emit(T_NEW, yytext); }
+"string"                      { emit(T_STRING, yytext); }
+"int"                         { emit(T_INT, yytext); }
+"char"                        { emit(T_CHAR, yytext); }
+"bool"                        { emit(T_BOOL, yytext); }
+"true"                        { emit(T_TRUE, yytext); }
+"false"                       { emit(T_FALSE, yytext); }
+"and"                         { emit(T_AND, yytext); }
+"or"                          { emit(T_OR, yytext); }
+"not"                         { emit(T_NOT, yytext); }
+
+[a-zA-Z_][a-zA-Z0-9_]*        { emit(T_ID, yytext); }
+
+"0x"[0-9a-fA-F]+              { emit(T_HEX_LITERAL, yytext); }
+[0-9]+                        { emit(T_INT_LITERAL, yytext); }
+\"([^\\\"]|\\.)*\"            { emit(T_STRING_LITERAL, yytext); }
+
+"+"                           { emit(T_PLUS, yytext); }
+"-"                           { emit(T_MINUS, yytext); }
+"*"                           { emit(T_STAR, yytext); }
+"/"                           { emit(T_SLASH, yytext); }
+">"                           { emit(T_GT, yytext); }
+"<"                           { emit(T_LT, yytext); }
+">="                          { emit(T_GE, yytext); }
+"<="                          { emit(T_LE, yytext); }
+"="                           { emit(T_EQ, yytext); }
+"<>"                          { emit(T_NEQ, yytext); }
+
+"("                           { emit(T_LPAREN, yytext); }
+")"                           { emit(T_RPAREN, yytext); }
+"["                           { emit(T_LBRACK, yytext); }
+"]"                           { emit(T_RBRACK, yytext); }
+","                           { emit(T_COMMA, yytext); }
+":"                           { emit(T_COLON, yytext); }
+
+"//"[^\\n]*                   { emit(T_COMMENT, yytext); }
+"/*"([^\*]|\*+[^/])*\*+/     { emit(T_COMMENT, yytext); }
+
+.                             { emit(T_ERROR, yytext); }
+
+%%
+
+int main(int argc, char **argv) {
+  if(argc < 2) {
+    fprintf(stderr, "Uso: %s <archivo.mini0>\n", argv[0]);
+    return 1;
+  }
+  FILE *f = fopen(argv[1], "r");
+  if(!f) {
+    perror("No se pudo abrir el archivo");
+    return 1;
+  }
+  yyin = f;
+  yylex();
+  fclose(f);
+  return 0;
+}
+
+
+
+
+.C :
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "token.h"  // Incluye la estructura Token
+
+int main(int argc, char **argv) {
+  if(argc < 2) {
+    fprintf(stderr, "Uso: %s <archivo.mini0>\n", argv[0]);
+    return 1;
+  }
+  FILE *f = fopen(argv[1], "r");
+  if(!f) {
+    perror("No se pudo abrir el archivo");
+    return 1;
+  }
+  yyin = f;  // Asignar el archivo de entrada
+  yylex();   // Ejecutar el análisis léxico
+  fclose(f);
+  return 0;
+}
+
+
+
+.H: 
+typedef enum {
+  T_IF, T_ELSE, T_END, T_WHILE, T_LOOP, T_FUN, T_RETURN, T_NEW, T_STRING, T_INT, T_CHAR, T_BOOL, 
+  T_TRUE, T_FALSE, T_AND, T_OR, T_NOT, T_ID, T_INT_LITERAL, T_HEX_LITERAL, T_STRING_LITERAL,
+  T_PLUS, T_MINUS, T_STAR, T_SLASH, T_GT, T_LT, T_GE, T_LE, T_EQ, T_NEQ, T_LPAREN, T_RPAREN, 
+  T_LBRACK, T_RBRACK, T_COMMA, T_COLON, T_ERROR, T_COMMENT, T_NEWLINE
+} TokenType;
+
+typedef struct {
+  TokenType type;
+  char* lexeme;  // Texto original
+  int line;      // Línea en el archivo
+  long numeric_value;  // Si es un número (entero o hexadecimal)
+  char* sval;    // Si es un string
+} Token;
